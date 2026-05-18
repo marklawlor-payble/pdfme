@@ -450,6 +450,48 @@ const handleTypeChange = (
   pluginsRegistry: PluginRegistry,
 ) => {
   if (key !== 'type') return;
+
+  // Collect all keys that are "known" to any registered plugin so we can
+  // identify truly custom/unknown fields that applications may attach.
+  const allPluginKeys = new Set<string>();
+  for (const plugin of pluginsRegistry.values()) {
+    const ds = plugin?.propPanel?.defaultSchema;
+    if (ds) {
+      for (const k of Object.keys(ds)) {
+        allPluginKeys.add(k);
+      }
+    }
+  }
+
+  // Core schema keys shared by every schema type (from the base Schema zod
+  // object) plus the UI-only `id` field.
+  const coreSchemaKeys = new Set([
+    'id',
+    'name',
+    'type',
+    'content',
+    'position',
+    'width',
+    'height',
+    'rotate',
+    'opacity',
+    'readOnly',
+    'required',
+    '__splitRange',
+    '__isSplit',
+  ]);
+
+  // Snapshot the unknown fields before we wipe the schema.
+  // An "unknown" field is one that is not a core schema key and not part of
+  // any registered plugin's defaultSchema — i.e. application-defined metadata.
+  const schemaRecord = schema as Record<string, unknown>;
+  const unknownFields: Record<string, unknown> = {};
+  for (const k of Object.keys(schemaRecord)) {
+    if (!coreSchemaKeys.has(k) && !allPluginKeys.has(k)) {
+      unknownFields[k] = schemaRecord[k];
+    }
+  }
+
   const keysToKeep = ['id', 'name', 'type', 'position', 'required'];
   Object.keys(schema).forEach((key) => {
     if (!keysToKeep.includes(key)) {
@@ -462,7 +504,6 @@ const handleTypeChange = (
   // Apply default schema properties if available
   if (plugin?.propPanel.defaultSchema) {
     const defaultSchema = plugin.propPanel.defaultSchema;
-    const schemaRecord = schema as Record<string, unknown>;
 
     // Use a type-safe approach to copy properties
     for (const key of Object.keys(defaultSchema)) {
@@ -475,6 +516,12 @@ const handleTypeChange = (
       }
     }
   }
+
+  // Restore application-defined unknown fields so they are not silently lost.
+  for (const [k, v] of Object.entries(unknownFields)) {
+    schemaRecord[k] = v;
+  }
+
   if (schema.readOnly) {
     schema.required = false;
   }

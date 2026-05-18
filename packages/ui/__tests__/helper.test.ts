@@ -586,6 +586,48 @@ describe('changeSchemas test', () => {
       },
     ]);
   });
+
+  test('changeSchemas - type change preserves unknown/custom fields', () => {
+    // Simulate an application that stores its own metadata on a schema element.
+    const schemaWithCustomFields: SchemaForUI = {
+      id: uuid(),
+      ...getSchema(),
+      name: 'custom',
+      content: 'hello',
+      // Application-defined fields that are not part of any plugin's defaultSchema.
+      _appFieldId: 'app-123',
+      customMetadata: { source: 'import', tag: 'invoice' },
+    } as SchemaForUI & { _appFieldId: string; customMetadata: unknown };
+
+    const objs = [{ key: 'type', value: 'image', schemaId: schemaWithCustomFields.id }];
+    const mockCallback = vi.fn();
+
+    changeSchemas({
+      schemas: [schemaWithCustomFields],
+      objs,
+      commitSchemas: mockCallback,
+      basePdf: basePdf1,
+      pluginsRegistry,
+      pageSize,
+    });
+
+    const result = mockCallback.mock.calls[0][0][0] as Record<string, unknown>;
+
+    // The type should be updated.
+    expect(result.type).toBe('image');
+
+    // Custom application fields must survive the type change.
+    expect(result._appFieldId).toBe('app-123');
+    expect(result.customMetadata).toStrictEqual({ source: 'import', tag: 'invoice' });
+
+    // Type-specific text fields should NOT bleed through (they are not in
+    // image's defaultSchema and should have been cleared).
+    // The image defaultSchema does not have a `fontName` or `fontSize` field,
+    // so if the original text schema had them they would be gone.
+    // Here we confirm the result contains the image defaultSchema fields.
+    expect(result.name).toBe('custom');
+    expect(result.position).toStrictEqual({ x: 0, y: 0 });
+  });
 });
 
 describe('getDynamicHeightReflowChanges', () => {
