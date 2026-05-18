@@ -241,6 +241,18 @@ export const UIOptions = CommonOptions.extend({
   maxZoom: z.number().optional(),
   sidebarOpen: z.boolean().optional(),
   zoomLevel: z.number().optional(),
+  /**
+   * Custom URL for the PDF.js worker script.
+   *
+   * Applications with a strict Content Security Policy that blocks `data:` worker sources
+   * (e.g. `worker-src 'self'`) should copy the PDF.js worker file to their own origin and
+   * provide its URL here. When omitted, the bundled inline worker is used as a fallback.
+   *
+   * @example
+   * // Copy the worker to your public directory, then pass the URL:
+   * { pdfJsWorkerSrc: '/assets/pdf.worker.min.mjs' }
+   */
+  pdfJsWorkerSrc: z.string().optional(),
 });
 
 const HTMLElementSchema: z.ZodSchema<HTMLElement> = z.any().refine((v) => v instanceof HTMLElement);

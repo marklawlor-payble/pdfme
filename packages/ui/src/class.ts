@@ -20,6 +20,7 @@ import {
   checkPreviewProps,
   pluginRegistry,
 } from '@pdfme/common';
+import { setPdfJsWorkerSrc } from '@pdfme/converter';
 import { builtInPlugins } from '@pdfme/schemas/builtins';
 
 export abstract class BaseUIClass {
@@ -75,12 +76,15 @@ export abstract class BaseUIClass {
     };
     this.resizeObserver.observe(container);
 
-    const { lang, font } = options;
+    const { lang, font, pdfJsWorkerSrc } = options;
     if (lang) {
       this.lang = lang;
     }
     if (font) {
       this.font = font;
+    }
+    if (pdfJsWorkerSrc) {
+      setPdfJsWorkerSrc(pdfJsWorkerSrc);
     }
 
     if (Object.values(plugins).length > 0) {
@@ -120,13 +124,16 @@ export abstract class BaseUIClass {
 
   public updateOptions(options: UIOptions) {
     checkUIOptions(options);
-    const { lang, font } = options || {};
+    const { lang, font, pdfJsWorkerSrc } = options || {};
 
     if (lang) {
       this.lang = lang;
     }
     if (font) {
       this.font = font;
+    }
+    if (pdfJsWorkerSrc) {
+      setPdfJsWorkerSrc(pdfJsWorkerSrc);
     }
     this.options = Object.assign(this.options, options);
     this.render();

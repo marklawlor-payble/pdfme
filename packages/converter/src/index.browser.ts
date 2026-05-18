@@ -8,9 +8,35 @@ const clonePdfData = (pdf: ArrayBuffer | Uint8Array) =>
 
 const loadingTaskMap = new WeakMap<object, { destroy: () => Promise<void> }>();
 
+/**
+ * Override the PDF.js worker URL used by @pdfme/converter.
+ *
+ * By default, the converter bundles the PDF.js worker as an inline `data:` URI,
+ * which is blocked by strict Content Security Policies that disallow `data:` worker
+ * sources (e.g. `worker-src 'self'`).
+ *
+ * Call this function **before** any PDF rendering to provide a same-origin URL to the
+ * PDF.js worker file (e.g. a pre-copied asset served from your own origin):
+ *
+ * ```ts
+ * import { setPdfJsWorkerSrc } from '@pdfme/converter';
+ * setPdfJsWorkerSrc('/assets/pdf.worker.min.mjs');
+ * ```
+ *
+ * When not called, the bundled default worker is used as a fallback.
+ */
+let customWorkerSrc: string | undefined;
+
+export const setPdfJsWorkerSrc = (src: string): void => {
+  customWorkerSrc = src;
+};
+
 const getDocument = async (pdf: ArrayBuffer | Uint8Array) => {
-  if (typeof Worker !== 'undefined' && pdfjsLib.GlobalWorkerOptions.workerSrc !== workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+  if (typeof Worker !== 'undefined') {
+    const effectiveWorkerSrc = customWorkerSrc ?? workerSrc;
+    if (pdfjsLib.GlobalWorkerOptions.workerSrc !== effectiveWorkerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = effectiveWorkerSrc;
+    }
   }
 
   const loadingTask = pdfjsLib.getDocument({
