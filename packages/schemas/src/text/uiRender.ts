@@ -95,7 +95,8 @@ export const uiRender = async (arg: UIRenderProps<TextSchema>) => {
     mode === 'form' && Boolean(getTextLineRange(schema)) && hasInlineMarkdownFormat;
   const renderInlineMarkdownReadOnlyChunk =
     enableInlineMarkdown || isReadOnlySplitInlineMarkdownFormChunk;
-  const editable = isEditable(mode, schema) && !isReadOnlySplitInlineMarkdownFormChunk;
+  const editable =
+    isEditable(mode, schema) && !isReadOnlySplitInlineMarkdownFormChunk && schema.readOnly !== true;
   const usePlaceholder = editable && placeholder && !value;
   const getText = (element: HTMLDivElement) => {
     let text = element.innerText;
@@ -408,7 +409,7 @@ export const buildStyledTextContainer = (
     justifyContent: mapVerticalAlignToFlex(verticalAlignment),
     width: '100%',
     height: '100%',
-    cursor: isEditable(mode, schema) ? 'text' : 'default',
+    cursor: isEditable(mode, schema) && schema.readOnly !== true ? 'text' : 'default',
   };
   Object.assign(container.style, containerStyle);
   rootElement.innerHTML = '';

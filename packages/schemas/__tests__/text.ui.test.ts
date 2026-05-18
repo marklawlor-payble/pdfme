@@ -221,3 +221,110 @@ describe('text inline markdown UI rendering', () => {
     expect(textBlock.textContent).not.toContain('world');
   });
 });
+
+describe('readOnly text in designer mode', () => {
+  const makeReadOnlySchema = (): TextSchema => ({
+    id: 'readonly-text',
+    name: 'label',
+    type: 'text',
+    content: 'Static Label',
+    position: { x: 0, y: 0 },
+    width: 80,
+    height: 20,
+    alignment: 'left',
+    verticalAlignment: 'top',
+    fontName: 'Base',
+    fontSize: 12,
+    lineHeight: 1,
+    characterSpacing: 0,
+    textFormat: 'plain',
+    readOnly: true,
+    fontColor: '#000000',
+    backgroundColor: '',
+  });
+
+  const makeFont = () => ({ Base: { data: new Uint8Array(), fallback: true } }) as Font;
+  const makeCache = () =>
+    new Map<string | number, unknown>([['getFontKitFont-Base', createMockFont(() => true)]]);
+
+  it('does not make the text block contenteditable when readOnly is true in designer mode', async () => {
+    const rootElement = document.createElement('div');
+    const schema = makeReadOnlySchema();
+
+    await uiRender({
+      value: 'Static Label',
+      schema,
+      rootElement,
+      mode: 'designer',
+      options: { font: makeFont() },
+      _cache: makeCache(),
+      theme: { colorPrimary: '#1677ff' },
+    } as Parameters<typeof uiRender>[0]);
+
+    const textBlock = rootElement.querySelector(`#text-${schema.id}`) as HTMLDivElement;
+
+    // Must not be contenteditable in any form
+    expect(textBlock.contentEditable).not.toBe('plaintext-only');
+    expect(textBlock.contentEditable).not.toBe('true');
+  });
+
+  it('renders read-only span-wrapped content in designer mode when readOnly is true', async () => {
+    const rootElement = document.createElement('div');
+    const schema = makeReadOnlySchema();
+
+    await uiRender({
+      value: 'Hello',
+      schema,
+      rootElement,
+      mode: 'designer',
+      options: { font: makeFont() },
+      _cache: makeCache(),
+      theme: { colorPrimary: '#1677ff' },
+    } as Parameters<typeof uiRender>[0]);
+
+    const textBlock = rootElement.querySelector(`#text-${schema.id}`) as HTMLDivElement;
+
+    // Read-only path wraps each character in a span
+    const spans = Array.from(textBlock.querySelectorAll('span'));
+    expect(spans.length).toBeGreaterThan(0);
+    expect(textBlock.textContent).toBe('Hello');
+  });
+
+  it('uses a default cursor (not text cursor) when readOnly is true in designer mode', async () => {
+    const rootElement = document.createElement('div');
+    const schema = makeReadOnlySchema();
+
+    await uiRender({
+      value: 'Label',
+      schema,
+      rootElement,
+      mode: 'designer',
+      options: { font: makeFont() },
+      _cache: makeCache(),
+      theme: { colorPrimary: '#1677ff' },
+    } as Parameters<typeof uiRender>[0]);
+
+    const container = rootElement.firstElementChild as HTMLDivElement;
+    expect(container.style.cursor).toBe('default');
+  });
+
+  it('does not suppress inline editing for a non-readOnly text element in designer mode', async () => {
+    const rootElement = document.createElement('div');
+    const schema: TextSchema = { ...makeReadOnlySchema(), readOnly: false };
+
+    await uiRender({
+      value: 'Editable',
+      schema,
+      rootElement,
+      mode: 'designer',
+      options: { font: makeFont() },
+      _cache: makeCache(),
+      theme: { colorPrimary: '#1677ff' },
+    } as Parameters<typeof uiRender>[0]);
+
+    const textBlock = rootElement.querySelector(`#text-${schema.id}`) as HTMLDivElement;
+
+    // Non-readOnly text elements in designer mode must still be contenteditable
+    expect(['plaintext-only', 'true']).toContain(textBlock.contentEditable);
+  });
+});
