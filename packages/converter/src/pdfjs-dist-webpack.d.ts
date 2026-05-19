@@ -14,7 +14,7 @@ declare module 'pdfjs-dist/legacy/build/pdf.mjs' {
 
 declare module 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 
-declare module '*?worker&url' {
-  const workerUrl: string;
-  export default workerUrl;
+declare module '*?url' {
+  const url: string;
+  export default url;
 }
