@@ -41,3 +41,11 @@ export const pdf2size = async (pdf: ArrayBuffer | Uint8Array, options: Pdf2SizeO
 };
 
 export { img2pdf } from './img2pdf.js';
+
+/**
+ * No-op on Node.js: PDF.js uses WebAssembly rather than a Web Worker in the
+ * Node environment, so there is no workerSrc to configure. This stub exists
+ * to keep the export surface consistent with the browser build.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const setPdfJsWorkerSrc = (_src: string): void => {};
