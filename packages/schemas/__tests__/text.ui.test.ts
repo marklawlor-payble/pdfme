@@ -256,7 +256,7 @@ describe('readOnly text in designer mode', () => {
       schema,
       rootElement,
       mode: 'designer',
-      options: { font: makeFont() },
+      options: { font: makeFont(), future: { readOnlyInDesigner: true } },
       _cache: makeCache(),
       theme: { colorPrimary: '#1677ff' },
     } as Parameters<typeof uiRender>[0]);
@@ -277,7 +277,7 @@ describe('readOnly text in designer mode', () => {
       schema,
       rootElement,
       mode: 'designer',
-      options: { font: makeFont() },
+      options: { font: makeFont(), future: { readOnlyInDesigner: true } },
       _cache: makeCache(),
       theme: { colorPrimary: '#1677ff' },
     } as Parameters<typeof uiRender>[0]);
@@ -299,7 +299,7 @@ describe('readOnly text in designer mode', () => {
       schema,
       rootElement,
       mode: 'designer',
-      options: { font: makeFont() },
+      options: { font: makeFont(), future: { readOnlyInDesigner: true } },
       _cache: makeCache(),
       theme: { colorPrimary: '#1677ff' },
     } as Parameters<typeof uiRender>[0]);

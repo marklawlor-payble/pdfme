@@ -95,8 +95,9 @@ export const uiRender = async (arg: UIRenderProps<TextSchema>) => {
     mode === 'form' && Boolean(getTextLineRange(schema)) && hasInlineMarkdownFormat;
   const renderInlineMarkdownReadOnlyChunk =
     enableInlineMarkdown || isReadOnlySplitInlineMarkdownFormChunk;
+  const readOnlyLockedInDesigner = options.future?.readOnlyInDesigner === true && schema.readOnly === true;
   const editable =
-    isEditable(mode, schema) && !isReadOnlySplitInlineMarkdownFormChunk && schema.readOnly !== true;
+    isEditable(mode, schema) && !isReadOnlySplitInlineMarkdownFormChunk && !readOnlyLockedInDesigner;
   const usePlaceholder = editable && placeholder && !value;
   const getText = (element: HTMLDivElement) => {
     let text = element.innerText;
@@ -354,7 +355,8 @@ export const buildStyledTextContainer = (
   value: string,
   resolvedDynamicFontSize?: number,
 ) => {
-  const { schema, rootElement, mode } = arg;
+  const { schema, rootElement, mode, options } = arg;
+  const readOnlyLockedInDesigner = options.future?.readOnlyInDesigner === true && schema.readOnly === true;
 
   let dynamicFontSize: undefined | number = resolvedDynamicFontSize;
 
@@ -409,7 +411,7 @@ export const buildStyledTextContainer = (
     justifyContent: mapVerticalAlignToFlex(verticalAlignment),
     width: '100%',
     height: '100%',
-    cursor: isEditable(mode, schema) && schema.readOnly !== true ? 'text' : 'default',
+    cursor: isEditable(mode, schema) && !readOnlyLockedInDesigner ? 'text' : 'default',
   };
   Object.assign(container.style, containerStyle);
   rootElement.innerHTML = '';

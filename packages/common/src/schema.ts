@@ -241,6 +241,14 @@ export const UIOptions = CommonOptions.extend({
   maxZoom: z.number().optional(),
   sidebarOpen: z.boolean().optional(),
   zoomLevel: z.number().optional(),
+  future: z
+    .object({
+      // When true, readOnly:true text schemas will also suppress inline editing in
+      // the Designer canvas (previously readOnly was ignored in designer mode).
+      // This will become the default behaviour in the next major version.
+      readOnlyInDesigner: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 const HTMLElementSchema: z.ZodSchema<HTMLElement> = z.any().refine((v) => v instanceof HTMLElement);
