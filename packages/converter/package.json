@@ -48,7 +48,7 @@
   },
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "vite build && tsc -p tsconfig.build.json && (! grep -q 'data:text/javascript;base64' dist/index.js || (echo 'ERROR: data: URI detected in dist/index.js (CSP regression)' >&2 && exit 1))",
     "clean": "rimraf dist",
     "lint": "vp lint -c ../../.oxlintrc.json src",
     "fmt": "vp fmt -c ../../.oxfmtrc.json src --write",
