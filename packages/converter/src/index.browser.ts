@@ -1,7 +1,14 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { pdf2img as _pdf2img, Pdf2ImgOptions } from './pdf2img.js';
 import { pdf2size as _pdf2size, Pdf2SizeOptions } from './pdf2size.js';
-import workerSrc from './pdfjs-worker.js?worker&url';
+// ?url instructs the consumer's bundler (Vite or webpack with url-loader) to emit
+// the worker as a same-origin asset and return its URL — not a data: URI.
+// The import is preserved as-is in our dist because pdfjs-dist is external.
+import workerSrc from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
+
+export const setPdfjsWorkerSrc = (src: string) => {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = src;
+};
 
 const clonePdfData = (pdf: ArrayBuffer | Uint8Array) =>
   pdf instanceof Uint8Array ? new Uint8Array(pdf) : new Uint8Array(pdf);
@@ -28,20 +35,13 @@ const destroyDocument = async (document: object) => {
 };
 
 function dataURLToArrayBuffer(dataURL: string): ArrayBuffer {
-  // Split out the actual base64 string from the data URL scheme
   const base64String = dataURL.split(',')[1];
-
-  // Decode the Base64 string to get the binary data
   const byteString = atob(base64String);
-
-  // Create a typed array from the binary string
   const arrayBuffer = new ArrayBuffer(byteString.length);
   const uintArray = new Uint8Array(arrayBuffer);
-
   for (let i = 0; i < byteString.length; i++) {
     uintArray[i] = byteString.charCodeAt(i);
   }
-
   return arrayBuffer;
 }
 
@@ -59,7 +59,6 @@ export const pdf2img = async (
       return canvas;
     },
     canvasToArrayBuffer: (canvas, imageType) => {
-      // Using type assertion to handle the canvas method
       const dataUrl = (canvas as HTMLCanvasElement).toDataURL(`image/${imageType}`);
       return dataURLToArrayBuffer(dataUrl);
     },

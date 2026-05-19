@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { builtinModules } from 'node:module';
+import { builtinModules, createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')) as {
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
@@ -18,31 +20,30 @@ const packageDependencies = [
   ...Object.keys(packageJson.dependencies ?? {}),
   ...Object.keys(packageJson.peerDependencies ?? {}),
 ];
-const pdfjsWorkerCompatBanner = [
-  'const pdfmeUint8ArrayPrototype = Uint8Array.prototype;',
-  'if (!pdfmeUint8ArrayPrototype.toHex) {',
-  "  Object.defineProperty(Uint8Array.prototype, 'toHex', {",
-  '    configurable: true,',
-  '    value() {',
-  "      let result = '';",
-  '      for (let i = 0; i < this.length; i += 1) {',
-  '        const hex = this[i].toString(16);',
-  '        result += hex.length === 1 ? `0${hex}` : hex;',
-  '      }',
-  '      return result;',
-  '    },',
-  '    writable: true,',
-  '  });',
-  '}',
-].join('\n');
 
 const isExternal = (id: string) =>
   builtinModuleSet.has(id) ||
   packageDependencies.some((dependency) => id === dependency || id.startsWith(`${dependency}/`));
 
+// Ships the pre-built pdfjs worker alongside the package dist so webpack consumers
+// can reference it directly (e.g. via setPdfjsWorkerSrc). Vite consumers get the
+// worker automatically via the ?url import handled by their own bundler.
+const shipPdfjsWorker = (): Plugin => ({
+  name: 'ship-pdfjs-worker',
+  generateBundle() {
+    const workerPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.min.mjs');
+    this.emitFile({
+      type: 'asset',
+      fileName: 'pdf.worker.min.mjs',
+      source: readFileSync(workerPath),
+    });
+  },
+});
+
 export default defineConfig(() => {
   return {
     base: './',
+    plugins: [shipPdfjsWorker()],
     build: {
       lib: {
         entry: {
@@ -58,14 +59,6 @@ export default defineConfig(() => {
       rollupOptions: { external: isExternal },
       sourcemap: true,
       target: 'es2020',
-    },
-    worker: {
-      format: 'es',
-      rollupOptions: {
-        output: {
-          banner: pdfjsWorkerCompatBanner,
-        },
-      },
     },
   };
 });
